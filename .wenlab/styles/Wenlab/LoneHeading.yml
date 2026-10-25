@@ -1,0 +1,48 @@
+extends: script
+message: "孤立的下级标题：“%s”是其上级标题下唯一的下级标题；请省略这一层，或补充同级标题。"
+level: error
+scope: raw
+# Only ATX headings are parsed; frontmatter and fenced code blocks are skipped.
+script: |
+  text := import("text")
+  headings := []
+  lines := text.split(scope, "\n")
+  pos := 0
+  fence := ""
+  front := false
+  for i, raw in lines {
+    line := text.trim_suffix(raw, "\r")
+    start := pos
+    pos += len(raw) + 1
+    if i == 0 && line == "---" { front = true; continue }
+    if front {
+      if line == "---" || line == "..." { front = false }
+      continue
+    }
+    marker := text.re_find("^ {0,3}(`{3,}|~{3,})", line)
+    if marker != undefined {
+      ch := marker[0][1].text[0:1]
+      if fence == "" { fence = ch } else if ch == fence { fence = "" }
+      continue
+    }
+    if fence != "" { continue }
+    m := text.re_find("^ {0,3}(#{1,6})(?:[ \t]+(.*?))?[ \t]*$", line)
+    if m == undefined { continue }
+    headings = append(headings, {level: len(m[0][1].text), begin: start, end: start + len(line)})
+  }
+  parents := []
+  stack := []
+  for i, h in headings {
+    for len(stack) > 0 && headings[stack[len(stack)-1]].level >= h.level { stack = stack[:len(stack)-1] }
+    parents = append(parents, len(stack) > 0 ? stack[len(stack)-1] : -1)
+    stack = append(stack, i)
+  }
+  counts := {}
+  for p in parents {
+    if p >= 0 { counts[string(p)] = (counts[string(p)] == undefined ? 0 : counts[string(p)]) + 1 }
+  }
+  matches := []
+  for i, h in headings {
+    p := parents[i]
+    if p >= 0 && counts[string(p)] == 1 { matches = append(matches, {begin: h.begin, end: h.end}) }
+  }

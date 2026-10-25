@@ -1,0 +1,21 @@
+Authenticode		# 微软用于验证软件发布者身份和文件完整性的数字签名技术
+AutoCorrect			# 中英文混排的排版与标点检查工具
+autocorrectrc		# AutoCorrect 配置文件 .autocorrectrc 的文件名主体
+bcpkg				# Beyond Compare 设置包的文件扩展名
+CSpell				# 代码与文档的拼写检查工具
+frontmatter			# 文档正文前用于存放元数据的头部区域
+ignorecase			# Vale 规则中控制是否忽略大小写的配置项
+kubelet				# Kubernetes 中运行在节点上、管理容器工作负载的代理
+lychee				# 检查网址、本地文件链接与锚点的工具
+markdownlint		# 检查 Markdown 语法风格与结构的工具
+MDX					# 支持在 Markdown 中使用 JSX 的文档格式
+nonword				# Vale 规则中控制是否省略自动单词边界的配置项
+Obsidian			# 以本地 Markdown 文件为基础的笔记与知识管理软件
+PowerShell			# 微软的命令行外壳与脚本语言
+pyproject			# Python 项目配置文件 pyproject.toml 的文件名主体
+rumdl				# 基于 Rust 的 Markdown 检查与格式化工具
+rustc				# Rust 语言编译器
+Turbopack			# 用于 JavaScript 和 TypeScript 的增量打包工具
+Vale				# 基于规则检查文档写作风格与术语的工具
+wenlab				# 本仓库名称，保存中文写作规范与 Markdown 审计工具
+winget				# Windows 程序包管理器的命令行工具

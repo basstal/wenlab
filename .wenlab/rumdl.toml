@@ -1,0 +1,43 @@
+[global]
+# Preserve the original Markdown structure gate; additional rumdl rules are opt-in.
+# MD024 stays off: duplicate headings are checked by the Vale rule Wenlab.HeadingDuplicates.
+enable = ["MD001", "MD003", "MD004", "MD005", "MD007", "MD009", "MD010", "MD011", "MD012", "MD014", "MD018", "MD019", "MD020", "MD021", "MD022", "MD023", "MD025", "MD026", "MD027", "MD028", "MD029", "MD030", "MD031", "MD032", "MD034", "MD035", "MD036", "MD037", "MD038", "MD039", "MD040", "MD041", "MD042", "MD043", "MD044", "MD045", "MD046", "MD047", "MD048", "MD049", "MD050", "MD051", "MD052", "MD053", "MD054", "MD055", "MD056", "MD058", "MD059", "MD060"]
+flavor = "standard"
+cache = false
+editorconfig = false
+
+[code-block-tools]
+enabled = false
+
+[MD004]
+style = "dash"
+
+[MD026]
+# Pause marks only, half- and full-width plus the enumeration comma; question and exclamation marks stay allowed.
+punctuation = ".,;:。，；：、"
+
+[MD029]
+style = "ordered"
+
+[MD035]
+style = "---"
+
+[MD046]
+style = "fenced"
+
+[MD048]
+style = "backtick"
+
+[MD049]
+style = "asterisk"
+
+[MD050]
+style = "asterisk"
+
+[MD051]
+anchor-style = "github"
+ignore-case = false
+
+[MD060]
+enabled = true
+style = "aligned"

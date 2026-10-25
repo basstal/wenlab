@@ -1,0 +1,11 @@
+extends: substitution
+message: "请将 '%[2]s' 写为 '%[1]s'。"
+level: error
+ignorecase: false
+nonword: true
+swap:
+  '\bGithub\b': GitHub
+  '\bNodeJS\b': Node.js
+  '\bPowershell\b': PowerShell
+  '\bTypescript\b': TypeScript
+  '\bJavascript\b': JavaScript

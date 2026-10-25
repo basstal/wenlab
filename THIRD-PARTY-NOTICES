@@ -1,0 +1,57 @@
+Third-party materials and dependencies
+Reviewed: 2026-10-25
+
+Scope
+-----
+The root LICENSE applies to original contributions to wenlab. It does not
+replace the licenses or copyright notices of third-party tools, dictionaries,
+or source materials. Installing a dependency does not relicense it under MIT.
+
+Core tools
+----------
+The repository invokes these tools or their APIs. Their upstream license
+notices must be retained when distributing their code or binaries.
+
+- AutoCorrect 2.16.3: MIT
+  https://github.com/huacnlee/autocorrect/blob/v2.16.3/LICENSE
+- rumdl 0.3.0: MIT
+  https://github.com/rvben/rumdl/blob/v0.3.0/LICENSE
+- CSpell 10.3.6: MIT
+  See tools/docs-audit/node_modules/cspell/LICENSE after installation.
+- Prettier 3.9.9: MIT
+  See tools/docs-audit/node_modules/prettier/LICENSE after installation.
+- Vale 3.24.0: MIT
+  https://github.com/vale-cli/vale/blob/v3.24.0/LICENSE
+- lychee 0.24.2: Apache-2.0 OR MIT
+  https://github.com/lycheeverse/lychee/blob/lychee-v0.24.2/LICENSE-MIT
+
+Transitive npm dependencies
+--------------------------
+tools/docs-audit/package-lock.json records the exact versions and declared
+licenses of 109 dependency entries at the review date: MIT (101), ISC (4),
+BSD-2-Clause (1), BSD-3-Clause (1), WTFPL (1), and CC BY-SA 4.0 (1).
+
+In particular, @cspell/dict-en-common-misspellings 2.2.5 is distributed under
+CC BY-SA 4.0. Its dictionary is not relicensed under the project's MIT
+license. If distributing or adapting this material, retain its attribution
+and license information and satisfy the applicable ShareAlike requirements.
+See that package's LICENSE, README.md and package.json after installation.
+
+node_modules and downloaded tool binaries are not part of the tracked source
+distribution. Any future bundled distribution must include the applicable
+upstream license texts, notices and attribution for the materials it ships;
+this summary does not replace those texts.
+
+Writing guidance source
+-----------------------
+docs/中文技术写作语义审校清单.md draws on ruanyf's document-style-guide.
+Author: 阮一峰 (ruanyf) and contributors.
+The upstream README declares the material public domain.
+Source and license statement:
+https://github.com/ruanyf/document-style-guide/blob/master/README.md
+
+Runtime and optional software
+-----------------------------
+Git, PowerShell, Node.js and the optional Beyond Compare installation retain
+their own licenses. The project's MIT license does not grant a license to
+Beyond Compare or authorize redistribution of a third-party installation.

@@ -1,0 +1,7 @@
+extends: existence
+message: "中文段落结尾缺少句末标点：在“%s”之后补上句号或其他句末标点。"
+level: error
+scope: paragraph
+nonword: true
+tokens:
+  - '\p{Han}\s*\z'

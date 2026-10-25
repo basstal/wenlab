@@ -1,0 +1,6 @@
+{
+  "exclude": [
+    "archive",
+    "tools/docs-audit/tests/fixtures/pass.md"
+  ]
+}

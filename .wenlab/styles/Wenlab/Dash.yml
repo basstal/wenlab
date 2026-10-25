@@ -1,0 +1,8 @@
+extends: existence
+message: "破折号写法不规范：“%s”；用于解释说明时请使用占两个字位置的“——”；若是两个名词组成的复合词，请改用连字符“-”，如“氧化-还原”。"
+level: error
+nonword: true
+tokens:
+  - '\p{Han}\s*-{2,}\s*\p{Han}'
+  - '\p{Han}\s*(?<!—)—(?!—)\s*\p{Han}'
+  - '—{3,}'

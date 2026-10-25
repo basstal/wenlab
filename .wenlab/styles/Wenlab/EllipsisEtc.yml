@@ -1,0 +1,6 @@
+extends: existence
+message: "省略号与“等”连用：“%s”；请只保留其中一个。"
+level: error
+nonword: true
+tokens:
+  - '(?:…|⋯|\.{3,}|。{2,})\s*等'

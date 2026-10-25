@@ -1,0 +1,14 @@
+{
+  "name": "wenlab-docs-audit",
+  "private": true,
+  "version": "1.0.0",
+  "license": "MIT",
+  "engines": { "node": ">=22.18.0" },
+  "scripts": {
+    "test": "node tests/Test-DocsAudit.mjs && node tests/Test-RealTools.mjs && node tests/Test-ReviewArtifacts.mjs && node tests/Test-ProjectDictionary.mjs && node tests/Test-ProjectConfig.mjs"
+  },
+  "devDependencies": {
+    "cspell": "10.3.6",
+    "prettier": "3.9.9"
+  }
+}

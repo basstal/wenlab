@@ -1,0 +1,7 @@
+extends: existence
+message: "数值范围“%s”只在后一个数字带了单位；两个数字都要写单位或百分号，如“67%%～89%%”。"
+level: error
+nonword: true
+tokens:
+  # Percent, temperature, Latin units and Chinese units of measure; counters such as 个、次、章 are not units.
+  - '(?<![A-Za-z0-9_.,:/#+\-])-?\d+(?:\.\d+)?\s*～\s*-?\d+(?:\.\d+)?\s*(?:%|°C|℃|[A-Za-z]+\b|年|月|日|天|周|小时|分钟|秒|元|万元|千米|公里|厘米|毫米|米|千克|公斤|克|吨|岁)'

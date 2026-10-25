@@ -1,0 +1,6 @@
+extends: existence
+message: "图表编号“%s”请用连字符“-”连接，如“图 1-1”。"
+level: error
+nonword: true
+tokens:
+  - '[图表]\s*\d+(?:\.\d+)*\s*[—–～~]\s*\d+'

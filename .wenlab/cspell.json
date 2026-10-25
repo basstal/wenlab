@@ -1,0 +1,11 @@
+{
+  "version": "0.2",
+  "language": "en,en-gb",
+  "useGitignore": false,
+  "ignorePaths": [],
+  "dictionaryDefinitions": [
+    { "name": "wenlab", "path": "./dictionary.txt", "addWords": true }
+  ],
+  "dictionaries": ["wenlab"],
+  "ignoreRegExpList": ["/https?:\\/\\/[^\\s)]+/g"]
+}

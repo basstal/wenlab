@@ -1,0 +1,6 @@
+extends: existence
+message: "一逗到底：同一句中连用了 5 个或更多逗号；请按语义改用句号、分号或顿号断开。"
+level: error
+nonword: true
+tokens:
+  - '(?:[^，。！？；：]*，){5,}'

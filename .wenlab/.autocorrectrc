@@ -1,0 +1,6 @@
+rules:
+  spellcheck: 0
+  # Compound words and figure numbers keep the hyphen without spaces, as in 氧化-还原 and 图 1-1.
+  space-dash: 0
+context:
+  codeblock: 0

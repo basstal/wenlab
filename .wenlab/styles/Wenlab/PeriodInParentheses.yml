@@ -1,0 +1,6 @@
+extends: existence
+message: "句末括号注释内出现了句号：“%s”；句号应放在括号之外。整句括号注释（前一句已用句号结束）不受此限。"
+level: error
+nonword: true
+tokens:
+  - '(?<=[^。！？\s])（[^（）]*。）'

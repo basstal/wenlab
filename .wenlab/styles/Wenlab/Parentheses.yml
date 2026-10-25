@@ -1,0 +1,7 @@
+extends: existence
+message: "中文语句中使用了半角括号“%s”；请改用全角括号（），括号前后不加空格。"
+level: error
+nonword: true
+tokens:
+  - '\p{Han}\s*[()]'
+  - '[()]\s*\p{Han}'

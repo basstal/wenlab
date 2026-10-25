@@ -1,0 +1,8 @@
+extends: existence
+message: "数值范围“%s”请用波浪连接号“～”或“至”连接，如“2009 年～2011 年”。"
+level: error
+nonword: true
+tokens:
+  # Two numbers joined by a hyphen, dash or ASCII tilde and followed by a unit or Chinese measure word.
+  # Not matched: ISO dates, version strings, identifiers such as x86-64 or UTF-8, and figure or table numbers such as 图 1-1.
+  - '(?<![A-Za-z0-9_.,:/#+\-])(?<!(?:图|表)\s*)\d+(?:\.\d+)?\s*(?:%|°C|℃|[A-Za-z]+|\p{Han})?\s*[-–—~]\s*\d+(?:\.\d+)?\s*(?:%|°C|℃|[A-Za-z]+|\p{Han})'

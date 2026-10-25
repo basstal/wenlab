@@ -1,0 +1,13 @@
+extends: existence
+message: "省略号写法不规范：“%s”；中文语句中请使用两个“…”组成的“……”。"
+level: error
+nonword: true
+tokens:
+  # Three or more dots next to Chinese text or full-width punctuation; English sentences keep "...".
+  - '[\p{Han}，。、；：！？”’）]\s*\.{3,}'
+  - '\.{3,}\s*[\p{Han}“‘（]'
+  - '。{2,}'
+  # A single "…", three or more "…", or the mathematical "⋯".
+  - '(?<!…)…(?!…)'
+  - '…{3,}'
+  - '⋯+'

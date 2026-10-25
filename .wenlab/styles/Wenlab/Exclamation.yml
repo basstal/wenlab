@@ -1,0 +1,6 @@
+extends: existence
+message: "感叹号连用：“%s”；请只用一个，并尽量使用平静的语气。"
+level: error
+nonword: true
+tokens:
+  - '[!！]{2,}'

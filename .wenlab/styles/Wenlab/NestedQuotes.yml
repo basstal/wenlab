@@ -1,0 +1,6 @@
+extends: existence
+message: "双引号内又出现了双引号“%s”；内层请改用单引号‘’。"
+level: error
+nonword: true
+tokens:
+  - '“[^”]*“'

@@ -1,0 +1,8 @@
+extends: existence
+message: "数字与英文单位之间缺少空格：“%s”；请写成“16 GB”“100 ms”的形式。"
+level: error
+nonword: true
+tokens:
+  # Units are an allow list; identifiers such as x64, H264, md5 or 1080p are not reported.
+  - '(?<![A-Za-z0-9_.\-/#])\d+(?:\.\d+)?(?:[KMGTP]i?B|[kKMG]?Hz|[kMG]?bps|ms|μs|ns|min|mAh|kW|kg|mg|km|cm|mm|h|s|g|m|W|V)\b'
+  - '(?<![A-Za-z0-9_.\-/#])\d+(?:\.\d+)?°C'

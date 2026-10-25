@@ -1,0 +1,6 @@
+extends: existence
+message: "数值“%s”超过 4 位，请添加千分位逗号，如“1,258,000”；编号、端口、时间戳等标识符请写成行内代码。"
+level: error
+nonword: true
+tokens:
+  - '(?<![A-Za-z0-9_.,:/#+\-@])\d{5,}(?![\d.,]|[A-Za-z])'

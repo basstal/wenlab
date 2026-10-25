@@ -1,0 +1,10 @@
+extends: existence
+message: "句子过长：两个标点之间不超过 40 个字，逗号连接的整句不超过 100 个字；请拆分成短句。"
+level: error
+nonword: true
+tokens:
+  # Only Chinese characters are counted; Latin words, digits and spaces between them are not.
+  # More than 40 characters without any punctuation.
+  - '(?:\p{Han}[^\p{Han}，。、；：！？…—（）“”‘’《》「」『』,.;:!?()]*){41,}'
+  # More than 100 characters before the sentence ends with 。！？ or ；.
+  - '(?:\p{Han}[^\p{Han}。！？；.!?;]*){101,}'

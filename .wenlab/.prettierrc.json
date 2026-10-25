@@ -1,0 +1,8 @@
+{
+  "proseWrap": "preserve",
+  "endOfLine": "auto",
+  "tabWidth": 2,
+  "useTabs": false,
+  "embeddedLanguageFormatting": "off",
+  "plugins": ["../tools/docs-audit/prettier-plugin-asterisk-emphasis.mjs"]
+}

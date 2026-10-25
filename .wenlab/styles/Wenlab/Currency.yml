@@ -1,0 +1,10 @@
+extends: existence
+message: "金额“%s”请用阿拉伯数字书写，如“1,000 元”或“¥1,000”。"
+level: error
+nonword: true
+tokens:
+  # Approximate amounts such as 几百元、数十亿美元 or 上千元, and 100 亿元 with Arabic digits, are not reported.
+  # Fixed expressions without 十、百、千、万、亿, such as 一元复始 or 三元组, are not reported.
+  # Chinese numerals are in the lookbehind so a match starts at the beginning of the numeral run.
+  - '(?<![0-9几数多余约近上零一二两三四五六七八九十百千万亿]\s*)[零一二两三四五六七八九十百千万亿]*[十百千万亿][零一二两三四五六七八九十百千万亿]*(?:美元|欧元|日元|英镑|港元|港币|人民币|块钱|元)'
+  - '(?<![0-9几数多余约近上零一二两三四五六七八九十百千万亿]\s*)[一二两三四五六七八九](?:美元|欧元|日元|英镑|港元|港币|块钱|元钱)'
