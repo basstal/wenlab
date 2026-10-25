@@ -2,7 +2,7 @@
 
 Chinese technical writing guidelines and a read-only Markdown documentation audit toolkit for AI agents and authors. Includes an Agent Skill for documentation quality review, Markdown linting, Chinese typography, spelling, terminology and link checks.
 
-中文文档既要格式规范，也要内容准确、表达清楚。wenlab 把写作规范和检查工具放在一起，帮助作者和 Agent 检查这三类问题。
+中文文档既要格式规范，也要内容准确、表达清楚。wenlab 把写作规范和检查工具放在一起，帮助作者和 Agent 检查格式、内容与表达这三类问题。
 
 脚本检查文件名、排版、结构、拼写、术语和链接；内容与表达由人或 Agent 按 [写作规范](docs/通用写作规范.md) 审阅。检查只读，不修改原文。
 Gate 入口、编排、审阅包和测试均由 Node.js `.mjs` 脚本实现。

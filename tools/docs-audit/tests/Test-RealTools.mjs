@@ -92,6 +92,8 @@ try {
   assertEqual(goodTermsResult.exitCode, 0, "Vale should accept correct brands and contextual Chinese");
   console.log("PASS: real Vale applies brand rules without over-correcting Chinese words");
 
+  // AbsolutePaths was removed from format-quality checks; absolute path
+  // usage is now reviewed in the semantic content/editorial pass, not by Vale.
   const pathDocument = path.join(project, "paths.md");
   await writeFile(
     pathDocument,
@@ -102,11 +104,11 @@ try {
       "",
       "A relative path such as guide.md is allowed.",
       "",
-      "Use `C:\\inline\\a.md` in code.",
+      "Use \`C:\\inline\\a.md\` in code.",
       "",
-      "```text",
+      "\`\`\`text",
       "D:\\code\\a.md",
-      "```",
+      "\`\`\`",
       "",
     ].join("\n"),
   );
@@ -115,14 +117,17 @@ try {
     ["--config", path.join(configRoot, ".vale.ini"), "--output=JSON", "--", pathDocument],
     project,
   );
-  assertEqual(pathResult.exitCode, 1, "Vale should report absolute paths");
+  assertEqual(pathResult.exitCode, 0, "Vale should no longer report absolute paths");
   const pathAlerts = flattenVale(JSON.parse(pathResult.stdout));
-  assert(
-    pathAlerts.filter((alert) => alert.Check === "Wenlab.AbsolutePaths").length >= 4,
-    "Vale should cover prose, root-relative, inline and fenced absolute paths",
+  assertEqual(
+    pathAlerts.filter((alert) => alert.Check === "Wenlab.AbsolutePaths").length,
+    0,
+    "AbsolutePaths rule must be gone from the Wenlab rule set",
   );
-  console.log("PASS: real Vale reports absolute paths and ignores relative paths");
+  console.log("PASS: absolute paths are no longer reported by the format-quality Gate");
 
+  // AbsolutePaths removed from format quality: root-relative links no longer
+  // fail through Vale. Their target existence is still checked by lychee.
   const rootLinkProject = path.join(project, "root-link");
   await writeFile(path.join(rootLinkProject, "docs", "guide.md"), "# Guide\n\nText.\n");
   await writeFile(
@@ -135,14 +140,30 @@ try {
     path: rootLinkProject,
     reportDirectory: rootLinkReport,
   });
-  const rootLink = await latestSummary(path.join(rootLinkReport, "LocalGate"));
-  assertEqual(rootLinkCode, 1, "Root-relative links should fail LocalGate");
-  assertEqual(
-    rootLink.summary.Results.find((result) => result.Tool === "vale")?.Status,
-    "FAIL",
-    "Root-relative links must be reported by Vale because MD057 is disabled",
+  assertEqual(rootLinkCode, 0, "Existing root-relative links pass LocalGate without Vale");
+  await writeFile(
+    path.join(rootLinkProject, "broken.md"),
+    "# Broken\n\nSee [absent](/docs/absent.md).\n",
   );
-  console.log("PASS: MD057 is disabled and root-relative links fail through Vale");
+  const rootLinkReport2 = testReportPath("root-link-missing");
+  const rootLinkCode2 = await invokeDocsAudit({
+    gate: "LocalGate",
+    path: rootLinkProject,
+    reportDirectory: rootLinkReport2,
+  });
+  const rootLinkSummary2 = await latestSummary(path.join(rootLinkReport2, "LocalGate"));
+  assertEqual(rootLinkCode2, 1, "Missing root-relative targets should fail LocalGate");
+  assertEqual(
+    rootLinkSummary2.summary.Results.find((result) => result.Tool === "lychee-local")?.Status,
+    "FAIL",
+    "Missing root-relative link targets must be reported by lychee",
+  );
+  const rootVale = rootLinkSummary2.summary.Results.find((result) => result.Tool === "vale");
+  assert(
+    (rootVale?.Findings ?? []).every((finding) => finding.Check !== "Wenlab.AbsolutePaths"),
+    "Vale findings must not reference AbsolutePaths",
+  );
+  console.log("PASS: root-relative link targets are checked by lychee, not Vale");
 
   const valeCase = path.join(project, "vale-case");
   await writeFile(path.join(valeCase, "a-frontmatter.md"), "---\nkey: [unclosed\n---\n\n# Broken\n");
@@ -159,7 +180,7 @@ try {
   const valeResult = valeSummary.summary.Results.find((result) => result.Tool === "vale");
   assertEqual(valeCode, 2, "A Vale document error should make the Gate ERROR");
   assertEqual(valeResult.FileErrors.length, 1, "Vale should record the broken YAML document");
-  assertEqual(valeResult.Findings.length, 2, "Vale should continue and collect both later findings");
+  assertEqual(valeResult.Findings.length, 1, "Vale should continue and collect the later Terms finding");
   assert(
     valeSummary.diagnosis.includes("yaml: error") ||
       valeSummary.diagnosis.includes("unexpected end of stream") ||
