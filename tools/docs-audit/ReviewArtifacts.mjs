@@ -212,6 +212,15 @@ function addConfigurationSection(summary, lines, runtime) {
         `  - Vale 关闭的规则：${summary.ProjectConfig.ValeDisable?.length ? summary.ProjectConfig.ValeDisable.join("、") : "无"}`,
       );
       lines.push(`  - 文件名检查：${summary.ProjectConfig.FileNames ? "已启用" : "未启用"}`);
+      const archive = summary.ProjectConfig.ArchiveLinks;
+      if (archive) {
+        const archiveState = !archive.Enabled
+          ? "未启用"
+          : archive.DirectoryNames.length
+            ? `已启用，归档目录名 ${archive.DirectoryNames.join("、")}`
+            : "已启用，未指定归档目录名，不扫描";
+        lines.push(`  - 归档链接检查：${archiveState}`);
+      }
     } else {
       lines.push(
         `- 项目审计配置：未提供（\`${summary.ProjectConfig.Path}\` 不存在），使用默认规则。`,
@@ -434,10 +443,26 @@ export async function writeAuditDiagnosis(summary, run, runtime) {
   if (summary.Review?.Status !== "READY") {
     lines.push("", "预览未生成，请先解决依赖或预览生成故障，再执行 Gate。");
   }
-  if (summary.ArchiveLinks?.length || summary.ArchiveLinksScanned) {
+  const archiveConfig = summary.ProjectConfig?.ArchiveLinks;
+  if (archiveConfig?.Enabled === false) {
+    lines.push(
+      "",
+      "## 对归档文档的链接引用",
+      "",
+      "项目审计配置的 `archiveLinks.enabled` 为 `false`，本次未扫描指向归档文档的链接。",
+    );
+  } else if (archiveConfig && !archiveConfig.DirectoryNames?.length) {
+    lines.push(
+      "",
+      "## 对归档文档的链接引用",
+      "",
+      "项目审计配置未指定 `archiveLinks.directoryNames`，本次不识别归档目录，未扫描指向归档文档的链接。",
+    );
+  } else if (summary.ArchiveLinks?.length || summary.ArchiveLinksScanned) {
+    const archiveNames = archiveConfig.DirectoryNames.join("、");
     lines.push("", "## 对归档文档的链接引用", "");
     if (summary.ArchiveLinks?.length) {
-      lines.push("以下链接指向名为 archive 的目录（不区分大小写）下的归档文档。仅供核对，不影响检查结果。", "");
+      lines.push(`以下链接指向名为 ${archiveNames} 的归档目录（不区分大小写）下的文档。仅供核对，不影响检查结果。`, "");
       for (const link of summary.ArchiveLinks) {
         lines.push(
           `- ${toAuditCodeSpan(`${link.File}:${link.Line}:${link.Column}`)} → ${toAuditCodeSpan(link.Target)}`,

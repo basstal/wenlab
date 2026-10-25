@@ -108,7 +108,7 @@ Do not add a NuGet package if the same capability already exists under `Shared/`
 
 ## 4. Bug 修复要写明验证闭环
 
-“先确认失败，再修复，最后确认通过”的闭环值得采用。它比“改完代码后由 Agent 自行判断没有问题”可靠得多。
+建议采用“先确认失败，再修复，最后确认通过”的闭环。确认失败可以证明测试确实覆盖了问题，确认通过才能说明修复生效；只由 Agent 在改完代码后自行判断，两点都无法证明。
 
 推荐：
 
@@ -144,7 +144,7 @@ AGENTS.md 适合充当把 Agent 引向专门文档的路由（Router），而不
 
 这种做法可以从两个项目得到佐证：
 
-- VS Code 的做法最为极端。它的根 AGENTS.md 只有几行，说明自身是面向编码 Agent 的指引，并把项目介绍、架构、编码规范和验证步骤等详细内容指向 Copilot Instructions；
+- VS Code 的根 AGENTS.md 在这几个项目中最短，只有几行，说明自身是面向编码 Agent 的指引，并把项目介绍、架构、编码规范和验证步骤等详细内容指向 Copilot Instructions；
 - Rust 按主题把读者引向不同文档：标准库对应 std-dev-guide，编译器对应 rustc-dev-guide，构建与运行、测试、编译器架构和贡献流程也各有对应文档。
 
 ## 6. 高频规则留在 AGENTS.md，低频复杂流程放进 Skill 或文档
@@ -170,7 +170,7 @@ Next.js 的做法可作佐证。它的根 AGENTS.md 规定：有条件触发或�
 
 ## 7. 安全规则必须具体
 
-项目涉及 GitHub Token、API Key、Steam key、OpenAI 或 DeepSeek key、SSH 密钥、签名密钥或 CI secrets 时，应写明具体的密钥处理规则。
+项目涉及 GitHub token、OpenAI 或 DeepSeek 等服务的 API key、Steam key、SSH 密钥、签名密钥或 CI secrets 时，应写明具体的密钥处理规则。
 
 推荐：
 
@@ -193,7 +193,7 @@ Next.js 的做法可作佐证。它规定：
 
 ## 8. 定义最小修改原则
 
-最小修改原则对 Agent 尤其重要。Agent 修一个问题时，容易顺手重构、顺手抽象、顺手改命名、顺手升级依赖，最后把两行的 Bug 修复扩大成几十个文件的改动。
+最小修改原则对 Agent 尤其重要。Agent 修一个问题时，容易附带重构、抽象、改命名或升级依赖，最后把两行的 Bug 修复扩大成几十个文件的改动。
 
 推荐：
 
@@ -217,12 +217,7 @@ Kubernetes 的做法可作佐证。它要求修改保持聚焦、便于评审，
 3. 属于一套复杂的操作流程：写成 Skill。
 4. 属于长期的架构知识：写进 `docs/` 或 `ARCHITECTURE.md`。
 
-这种分层可以从几个大型项目得到佐证：
-
-- VS Code 将详细规范引向专门文档；
-- Rust 把架构、测试、构建和贡献流程等分别引向专门文档；
-- Next.js 将复杂的低频工作流拆到 `.agents/skills/`；
-- Next.js 还用很短的局部 AGENTS.md 表达某个子树独有的约束。
+第 3、4 条的佐证见[5. 详细架构文档不重复写进 AGENTS.md，只建立导航](#5-详细架构文档不重复写进-agentsmd只建立导航)和[6. 高频规则留在 AGENTS.md，低频复杂流程放进 Skill 或文档](#6-高频规则留在-agentsmd低频复杂流程放进-skill-或文档)。第 2 条可以从 Next.js 得到佐证：它用很短的局部 AGENTS.md 表达某个子树独有的约束。
 
 ## 资料来源
 

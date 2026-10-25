@@ -191,6 +191,56 @@ try {
   );
   console.log("PASS: audit context applies the same exclusions as the Gate");
 
+  const archiveLinkRoot = path.join(project, "docs", "archive-links");
+  await writeFile(
+    path.join(archiveLinkRoot, "current.md"),
+    "# Current\n\nSee [old](history/old.md) and [older](archive/older.md).\n",
+  );
+  await writeFile(path.join(archiveLinkRoot, "history", "old.md"), "# Old\n\nNothing here.\n");
+  await writeFile(path.join(archiveLinkRoot, "archive", "older.md"), "# Older\n\nNothing here.\n");
+  const archiveExclude = ["history", "archive"];
+  const linkTargets = (summary) => summary.ArchiveLinks.map((link) => link.Target).join(",");
+
+  await writeFile(configPath, JSON.stringify({ exclude: archiveExclude }));
+  const unnamedArchive = await invokeCase("archive-links-unnamed", archiveLinkRoot);
+  assertEqual(unnamedArchive.code, 0, "Unnamed archive link sample should pass");
+  assert(unnamedArchive.summary.ProjectConfig.ArchiveLinks.Enabled, "Archive links should default to enabled.");
+  assertEqual(unnamedArchive.summary.ArchiveLinks.length, 0, "No archive name must not list links");
+  assert(!unnamedArchive.summary.ArchiveLinksScanned, "No archive name must not scan links.");
+  assert(
+    unnamedArchive.diagnosis.includes("未指定 `archiveLinks.directoryNames`"),
+    "Diagnosis should say no archive directory name is configured.",
+  );
+  console.log("PASS: archive links are not identified without archiveLinks.directoryNames");
+
+  await writeFile(
+    configPath,
+    JSON.stringify({ exclude: archiveExclude, archiveLinks: { directoryNames: ["History"] } }),
+  );
+  const namedArchive = await invokeCase("archive-links-named", archiveLinkRoot);
+  assertEqual(namedArchive.code, 0, "Named archive link sample should pass");
+  assertEqual(linkTargets(namedArchive.summary), "history/old.md", "Configured archive directory name");
+  assert(namedArchive.diagnosis.includes("history/old.md"), "Diagnosis omits the configured archive link.");
+  assert(namedArchive.diagnosis.includes("History"), "Diagnosis omits the configured archive name.");
+  console.log("PASS: archiveLinks.directoryNames selects the archive directories");
+
+  await writeFile(
+    configPath,
+    JSON.stringify({ exclude: archiveExclude, archiveLinks: { enabled: false, directoryNames: ["history"] } }),
+  );
+  const offArchive = await invokeCase("archive-links-off", archiveLinkRoot);
+  assertEqual(offArchive.code, 0, "Disabled archive link sample should pass");
+  assertEqual(offArchive.summary.ArchiveLinks.length, 0, "Disabled archive check must not list links");
+  assert(!offArchive.summary.ArchiveLinksScanned, "Disabled archive check must not scan links.");
+  assert(offArchive.diagnosis.includes("归档链接检查：未启用"), "Diagnosis should show archive links disabled.");
+  assertEqual(
+    offArchive.summary.Files.join(","),
+    "docs/archive-links/current.md",
+    "Disabling the archive link check must not change exclude rules",
+  );
+  console.log("PASS: archiveLinks.enabled false skips the scan without changing exclude rules");
+  await fs.rm(archiveLinkRoot, { recursive: true, force: true });
+
   const invalidConfigs = [
     '{ "rumdl": { "disable": ["NOPE"] } }',
     '{ "prettier": {} }',
@@ -200,6 +250,12 @@ try {
     '{ "vale": { "disable": ["MD036"] } }',
     '{ "fileNames": { "enabled": "yes" } }',
     '{ "fileNames": { "other": true } }',
+    '{ "archiveLinks": { "enabled": "yes" } }',
+    '{ "archiveLinks": { "other": true } }',
+    '{ "archiveLinks": { "directoryNames": "archive" } }',
+    '{ "archiveLinks": { "directoryNames": [] } }',
+    '{ "archiveLinks": { "directoryNames": ["docs/archive"] } }',
+    '{ "archiveLinks": { "directoryNames": [".."] } }',
     '{ "exclude": "archive" }',
     '{ "exclude": [""] }',
     '{ "exclude": ["C:/outside"] }',

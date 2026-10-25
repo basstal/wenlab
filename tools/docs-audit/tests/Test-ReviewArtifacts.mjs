@@ -136,7 +136,7 @@ try {
   await writeFile(path.join(archiveScope, "ARCHIVE", "old.md"), "# Old\n\nText.\n");
   await writeFile(
     path.join(archiveScope, ".wenlab", "docs-audit.json"),
-    JSON.stringify({ exclude: ["archive"] }),
+    JSON.stringify({ exclude: ["archive"], archiveLinks: { directoryNames: ["archive"] } }),
   );
   const archiveReports = testReportPath("archive-links");
   const archiveCode = await invokeDocsAudit({

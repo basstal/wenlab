@@ -1,37 +1,8 @@
 #!/usr/bin/env node
-import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import {
-  discoverAuditScope,
-  getEffectiveExcludes,
-  matchesExclude,
-} from "../../../../tools/docs-audit/DocsAudit.mjs";
-import {
-  createRuntime,
-  pathExists,
-  repoRoot,
-  toPosixRelative,
-} from "../../../../tools/docs-audit/AuditRuntime.mjs";
-
-const markerNames = new Set([
-  "package.json",
-  "pyproject.toml",
-  "setup.py",
-  "requirements.txt",
-  "go.mod",
-  "Cargo.toml",
-  "pom.xml",
-  "build.gradle",
-  "build.gradle.kts",
-  "CMakeLists.txt",
-  "Makefile",
-  "composer.json",
-  "Gemfile",
-  "project.godot",
-  "ProjectVersion.txt",
-]);
-const markerPatterns = ["*.sln", "*.csproj", "*.uproject"];
+import { discoverAuditScope } from "../../../../tools/docs-audit/DocsAudit.mjs";
+import { createRuntime, pathExists, repoRoot } from "../../../../tools/docs-audit/AuditRuntime.mjs";
 
 function parse(argv) {
   const options = { Path: null, WenlabRoot: repoRoot, Help: false };
@@ -59,42 +30,6 @@ function parse(argv) {
   return options;
 }
 
-function isMarker(name) {
-  return markerNames.has(name) || markerPatterns.some((pattern) => path.matchesGlob(name, pattern));
-}
-
-async function findEngineeringEvidence(root, configRoot, projectConfig) {
-  const excludes = getEffectiveExcludes(projectConfig);
-  const evidence = [];
-  const pending = [{ directory: root, depth: 0 }];
-  while (pending.length && evidence.length < 10) {
-    const { directory, depth } = pending.shift();
-    let entries;
-    try {
-      entries = await fs.readdir(directory, { withFileTypes: true });
-    } catch {
-      continue;
-    }
-    for (const entry of entries) {
-      const full = path.join(directory, entry.name);
-      const relative = toPosixRelative(path.relative(root, full));
-      if (
-        relative.toLowerCase() === ".git" ||
-        relative.toLowerCase().startsWith(".git/") ||
-        entry.name.toLowerCase() === "node_modules"
-      ) {
-        continue;
-      }
-      if (matchesExclude(relative, excludes, { isDirectory: entry.isDirectory() })) continue;
-      if (entry.isSymbolicLink()) continue;
-      if (entry.isFile() && isMarker(entry.name)) evidence.push(relative);
-      if (entry.isDirectory() && depth < 2) pending.push({ directory: full, depth: depth + 1 });
-      if (evidence.length >= 10) break;
-    }
-  }
-  return evidence;
-}
-
 export async function getAuditContext({ scopePath, wenlabRoot = repoRoot }) {
   const specificationsDirectory = path.join(wenlabRoot, "docs");
   if (!(await pathExists(path.join(specificationsDirectory, "通用写作规范.md"), "file"))) {
@@ -113,24 +48,18 @@ export async function getAuditContext({ scopePath, wenlabRoot = repoRoot }) {
     reportRoot,
     runtime,
   });
-  const evidence = await findEngineeringEvidence(
-    discovered.docRoot,
-    runtime.configRoot,
-    discovered.projectConfig,
-  );
-  const applied = [path.join(specificationsDirectory, "通用写作规范.md")];
-  if (evidence.length) applied.push(path.join(specificationsDirectory, "当前状态文档写作规范.md"));
   return {
     Scope: scope,
     ProjectRoot: discovered.docRoot,
     InGit: discovered.inGit,
     FileListRule: isFile ? "file" : discovered.scanMode,
-    ProjectType: evidence.length ? "engineering" : "general",
-    ProjectEvidence: evidence,
     ExcludePatterns: discovered.effectiveExcludes,
-    Specifications: applied,
-    QualityLayers: path.join(specificationsDirectory, "agent写作备忘.md"),
-    SemanticChecklist: path.join(specificationsDirectory, "中文技术写作语义审校清单.md"),
+    ArticleTypeGuide: path.join(specificationsDirectory, "agent写作备忘.md"),
+    Specifications: {
+      General: path.join(specificationsDirectory, "通用写作规范.md"),
+      CurrentState: path.join(specificationsDirectory, "当前状态文档写作规范.md"),
+      SemanticChecklist: path.join(specificationsDirectory, "中文技术写作语义审校清单.md"),
+    },
     MarkdownCount: discovered.files.length,
     MarkdownFiles: discovered.files,
   };

@@ -10,14 +10,14 @@
   - "审阅包与 GUI 比对：修复预览、Beyond Compare 专用会话和过期预览保护。"
   - "各工具的配置位置、配置取舍与审计脚本的测试命令。"
 "不涉及的范围":
-  - "工具与依赖的安装、来源核验和固定版本记录。"
+  - "工具与依赖的安装和来源核验。"
   - "文档语义审校、中文语病和跨文档一致性检查。"
   - "Obsidian、MDX 等扩展 Markdown 语法的验证。"
 ---
 
 # Markdown 审计入口
 
-本地格式质量阀门 LocalGate 与远程格式质量阀门 RemoteGate 两个 Node.js Gate 入口只读地检查 Markdown 文档的排版、结构、拼写、格式、术语和链接。运行前需要 Node.js 22.18.0 或更新版本、Git，以及已安装的固定版本工具。
+LocalGate（本地格式质量阀门）与 RemoteGate（远程格式质量阀门）是两个 Node.js Gate 入口，只读地检查 Markdown 文档的文件名、排版、结构、拼写、格式、术语和链接。运行前需要 Node.js 22.18.0 或更新版本、Git，以及已安装的固定版本工具。
 依赖安装与检测见[依赖安装说明](依赖安装说明.md)。
 Gate 通过不代表中文语病、跨文档语义冲突与内容重复已经审校，也不代表验证了 Obsidian、MDX 等扩展语法。
 
@@ -38,8 +38,8 @@ node ./tools/docs-audit/LocalGate.mjs
 node ./tools/docs-audit/RemoteGate.mjs
 # 指定检查范围和超时
 node ./tools/docs-audit/LocalGate.mjs -Path docs/Markdown-审计入口.md -TimeoutSeconds 120
-# 检查其他目录或仓库中的文档：进入该目录后用相对路径，或直接给出绝对路径
-node PathToWenlab/tools/docs-audit/LocalGate.mjs -Path .
+# 检查其他目录或仓库中的文档（<wenlab> 为 wenlab 仓库路径）：进入该目录后用相对路径，或直接给出绝对路径
+node <wenlab>/tools/docs-audit/LocalGate.mjs -Path .
 # 记录各项检测及内部调用的耗时（RemoteGate 同样支持）
 node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
 ```
@@ -55,25 +55,38 @@ node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
   - 其他目录（如 Git 仓库下的 `docs`，或不在 Git 中的目录）递归收集其中所有 Markdown，包括被 `.gitignore` 忽略的文件；跳过名为 `.git` 和 `node_modules` 的目录、项目排除规则匹配项、当次报告输出目录，以及符号链接或目录联接指向的目录。
   - `-Path` 是单个文件时只检查该文件。
   - 两种目录规则都应用 `.wenlab/docs-audit.json` 的 `exclude` 列表；没有配置排除项时，不额外跳过任何项目路径。`-Path` 直接指向被排除的目录或其中的文件时，该显式范围不被同一条规则拦截；其下其他排除规则仍生效。
-  - 非归档文档中指向 archive 目录的链接会被列出，见“报告与审阅包”；归档文档之间的链接不列出。
-- 项目根目录：`-Path` 位于 Git 工作区中时取该工作区根目录，否则取 `-Path` 所在的目录本身。检查工具以项目根目录为工作目录运行，lychee 也以它为根目录解析以 `/` 开头的链接。
+- 项目根目录：`-Path` 位于 Git 工作区中时取该工作区根目录；不在 Git 工作区中时，`-Path` 是目录则取该目录，是文件则取文件所在的目录。检查工具以项目根目录为工作目录运行，lychee 也以它为根目录解析以 `/` 开头的链接。
 - 不存在的路径和不含 Markdown 的范围返回 ERROR。
 - CSpell 通过 `--file-list`、lychee 通过 `--files-from` 读取本次 `input-files.txt`，清单为 UTF-8 无 BOM，每行一个绝对路径。Prettier 检查通过本地 `Check-Markdown.mjs` 读取 JSON 清单并调用已安装的 Prettier API。三者都只在命令行上传递清单路径，每种工具一次调用处理整份清单，也不自行扩大审计范围。
 
 ### 项目级配置
 
 - 项目级配置统一放在项目根目录下的 `.wenlab/` 目录：`dictionary.txt` 为项目词典，`docs-audit.json` 为规则覆盖与排除列表；其他位置的同名文件不会被读取。wenlab 仓库自身同样遵守这一规则。
-- CSpell 词典按三层叠加：wenlab 词典 [.wenlab/dictionary.txt](../.wenlab/dictionary.txt) 始终加载，作为兜底；审计 wenlab 自身时，它同时就是项目词典，只加载一次；被审计项目的 `.wenlab/dictionary.txt` 默认加载，不存在时在终端、`summary.json` 和 `diagnosis.md` 中给出警告，检查照常进行，警告不影响退出码；`-Dictionary` 再附加一个词典文件，不替换前两层，相对路径按项目根目录解析，文件不存在时返回 ERROR。
-- 被审计项目可用 `.wenlab/docs-audit.json` 按项目调整规则；文件不存在时使用默认规则，不发警告。格式为 JSON，只接受以下五项：
+- CSpell 词典按三层叠加：
+  - wenlab 词典 [.wenlab/dictionary.txt](../.wenlab/dictionary.txt) 始终加载，作为兜底。审计 wenlab 自身时，它同时就是项目词典，只加载一次。
+  - 被审计项目的 `.wenlab/dictionary.txt` 默认加载。文件不存在时，在终端、`summary.json` 和 `diagnosis.md` 中给出警告，检查照常进行，警告不影响退出码。
+  - `-Dictionary` 再附加一个词典文件，不替换前两层。相对路径按项目根目录解析，文件不存在时返回 ERROR。
+- 被审计项目可用 `.wenlab/docs-audit.json` 按项目调整规则；文件不存在时使用默认规则，不发警告。格式为 JSON，只接受以下各项：
   - `exclude`：相对项目根目录的目录名、文件路径或通配符数组。不含 `/` 的条目匹配任意路径段；含 `/` 的条目匹配完整相对路径或目录子树；匹配不区分大小写，`*` 不跨目录，`**` 可跨目录。
   - `rumdl.disable`：在 wenlab 的 rumdl 配置之上额外关闭的规则，如 `["MD025", "MD036"]`，通过 `--extend-disable` 传入。
   - `lychee.exclude`：用正则表达式数组排除不检查的链接，同时用于本地和在线检查。
   - `vale.disable`：关闭 wenlab 的 Vale 规则，如 `["Wenlab.ThousandsSeparator", "Wenlab.LoneHeading"]`。Gate 为当次运行生成一份关闭这些规则的 Vale 配置，保存在报告目录的 `vale.ini` 中。
-  - `fileNames.enabled`：设为 `false` 时关闭文件名检查，默认启用，见“文件名检查”。
+  - `fileNames.enabled`：设为 `false` 时关闭文件名检查，默认启用，见[文件名检查](#文件名检查)。
+  - `archiveLinks.enabled`：设为 `false` 时关闭归档链接检查，默认启用，见[报告与审阅包](#报告与审阅包)。
+  - `archiveLinks.directoryNames`：归档目录名数组。每项是单个目录名，匹配链接目标路径中的任意一段，不区分大小写。Gate 不内置归档目录名，未配置这一项时不识别任何归档目录，也不扫描归档链接。
 
-文件不是合法 JSON、出现其他字段、`exclude` 不是数组或含绝对路径、父目录跳转及无效条目、rumdl 规则名不是 `MD` 加三位数字、Vale 规则名不是 `.wenlab/styles/Wenlab/` 中已有的规则、链接排除项不是非空字符串、正则无法解析，或 `fileNames.enabled` 不是布尔值时，返回 ERROR。
+归档链接检查与 `exclude` 相互独立：`archiveLinks` 只决定是否列出、按哪些目录名识别指向归档文档的链接，不改变文件清单；归档目录是否参与审计只由 `exclude` 决定。
 
-排除列表示例：
+出现以下情况时返回 ERROR：
+
+- 文件不是合法 JSON，或出现其他字段。
+- `exclude` 不是数组，或含绝对路径、父目录跳转及无效条目。
+- rumdl 规则名不是 `MD` 加三位数字，或 Vale 规则名不是 `.wenlab/styles/Wenlab/` 中已有的规则。
+- 链接排除项不是非空字符串，或正则无法解析。
+- `fileNames.enabled` 或 `archiveLinks.enabled` 不是布尔值。
+- `archiveLinks.directoryNames` 不是非空数组，或含空字符串、`/`、`\`、`.`、`..` 等不是单个目录名的条目。
+
+配置示例：
 
 ```json
 {
@@ -81,7 +94,11 @@ node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
     "drafts-*",
     "**/*.tmp.md",
     "docs/generated/**"
-  ]
+  ],
+  "archiveLinks": {
+    "enabled": true,
+    "directoryNames": ["archive", "history"]
+  }
 }
 ```
 
@@ -97,9 +114,9 @@ node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
 ### 运行参数
 
 - `-ReportDirectory` 指定报告输出目录，相对路径按 wenlab 仓库根目录解析，也支持绝对路径；不指定时写入 wenlab 仓库的 `.tmp/docs-audit/`。报告目录会从源文档扫描中排除；若显式指向被检查仓库内部，报告仍会写在该位置，但不会作为输入文档。
-- `-TimeoutSeconds` 默认 180 秒。逐文件调用使用此超时；清单检查及预览进程的超时为此值乘以该批文件数。检查进程的总超时受 Node.js 定时器上限约束。批处理不能单独中断某个文件，超时会将整批判为执行故障。
-- `-Profiler` 启用可选的耗时统计。终端显示各工具总耗时，以及项目根目录定位与文件扫描、版本探测、逐文件或批量检测与预览调用的次数、合计、平均和最大耗时。失败、超时及启动异常也计时，不改变 Gate 的判定规则；默认关闭。
-- `-Dictionary` 附加一个项目词典，见“项目级配置”。
+- `-TimeoutSeconds` 取 1～3600 的整数，默认 180 秒。逐文件调用使用此超时；清单检查及预览进程的超时为此值乘以该批文件数，上限为 460,800 秒（128 小时）。批处理不能单独中断某个文件，超时会将整批判为执行故障。
+- `-Profiler` 启用可选的耗时统计，默认关闭。终端显示各工具总耗时，以及项目根目录定位与文件扫描、版本探测、逐文件或批量检测与预览调用的次数、合计、平均和最大耗时。失败、超时及启动异常也计时，不改变 Gate 的判定规则。报告中的耗时数据见[报告与审阅包](#报告与审阅包)。
+- `-Dictionary` 附加一个项目词典，见[项目级配置](#项目级配置)。
 
 ## 结果判定
 
@@ -132,19 +149,33 @@ Vale 逐篇检查，单篇文档出现执行故障（如 frontmatter 的 YAML �
 
 `diagnosis.md` 中的“定位与修复建议”按实际执行的每项检查分别列出结果。文件名检查列出不合规的文件及原因；AutoCorrect 提供文件、行列及原文和建议片段；CSpell 提供未知词及行列；rumdl、Vale 提供规则诊断，Vale 另列执行失败文件；Prettier 列出格式问题文件；lychee 列出来源、目标链接、状态及修复或人工复核建议。通过项明确标注通过，执行失败或无可解析定位时保留日志入口，不将其当作通过。
 
-“对归档文档的链接引用”一节列出本次文档中指向 archive 目录（不区分大小写）的链接，给出文件、行列和链接目标，同时写入 `summary.json` 的 `ArchiveLinks`。识别范围是内联链接、图片和引用式链接定义，代码块与行内代码中的链接不计；以 `/` 开头的目标按项目根目录解析，网址和同页锚点不计。这一节只供核对，不影响检查结果和退出码。没有这类链接时，这一节写明“本次文档中没有指向归档文档的链接”；检查在扫描链接之前就已中止时，不生成这一节。
+“对归档文档的链接引用”一节列出本次非归档文档中指向归档目录的链接，给出文件、行列和链接目标，同时写入 `summary.json` 的 `ArchiveLinks`；归档文档之间的链接不列出。归档目录只按项目配置的 `archiveLinks.directoryNames` 识别，不区分大小写。识别范围是内联链接、图片和引用式链接定义，代码块与行内代码中的链接不计；以 `/` 开头的目标按项目根目录解析，网址和同页锚点不计。这一节只供核对，不影响检查结果和退出码。
 
-“打开 GUI 全量规则比对”之前的“配置与警告”一节集中列出：全部警告、项目根目录与 `.wenlab/` 位置、文件清单规则、实际使用的各层词典、项目审计配置中的覆盖项、Prettier 的 EditorConfig 与配置指纹，以及各工具基础配置所在目录。没有生成审阅包时，该节位于“重新运行”之前。
+这一节按扫描情况写出不同内容：
+
+- 扫描后发现链接时，逐条列出。
+- 扫描后没有发现时，写明“本次文档中没有指向归档文档的链接”。
+- `archiveLinks.enabled` 为 `false`，或未配置 `archiveLinks.directoryNames` 时，不扫描，这一节写明本次未扫描及原因。
+- 检查在读取项目配置之前中止，或配置要求扫描但检查在扫描链接之前中止时，不生成这一节。
+
+“配置与警告”一节集中列出：全部警告、项目根目录与 `.wenlab/` 位置、文件清单规则、实际使用的各层词典、项目审计配置中的覆盖项、Prettier 的 EditorConfig 与配置指纹，以及各工具基础配置所在目录。这一节位于“打开 GUI 全量规则比对”之前；没有生成审阅包时，位于“重新运行”之前。
+
+报告末尾的重跑命令保留 `-Profiler`、非默认超时参数和 `-Dictionary`。
 
 `summary.json` 中的 `ExitCodes` 按调用记录，`Batches` 保存各次调用对应的文件、退出码及超时信息；批次退出码不能当作每个文件的结果。Prettier 的逐文件 PASS、FAIL、ERROR 及耗时见 `prettier-check.json`，错误文件不会阻断同次进程中其他文件的检查。具体问题文件也保留在工具日志和诊断报告中。
 
-全部 PASS 且未启用 `-Profiler`、没有警告时，终端只显示各项检查结果和汇总；如有指向归档文档的链接，另外打印其数量及 `diagnosis.md` 的完整路径。启用 `-Profiler` 时还会打印耗时统计，存在警告时打印警告。存在 FAIL、REVIEW 或 ERROR 时，汇总后打印“诊断与修复建议”及 `diagnosis.md` 的完整路径；审阅包可用时，再打印“打开 GUI 全量规则比对”及完整的启动命令。终端不打印报告目录，也不会自动打开 GUI。
+全部 PASS 且未启用 `-Profiler`、没有警告时，终端只显示各项检查结果和汇总；如有指向归档文档的链接，另外打印其数量及 `diagnosis.md` 的完整路径。存在警告时打印警告。存在 FAIL、REVIEW 或 ERROR 时，汇总后打印“诊断与修复建议”及 `diagnosis.md` 的完整路径；审阅包可用时，再打印“打开 GUI 全量规则比对”及完整的启动命令。终端不打印报告目录，也不会自动打开 GUI。
 
-启用 `-Profiler` 后，终端额外输出耗时统计。`diagnosis.md` 汇总各工具与内部调用的耗时，`summary.json` 和额外生成的 `profile.json` 保存汇总及逐次调用明细，包括文件、耗时、退出码、超时和异常。统计使用墙钟时间，工具总耗时包含版本探测、逐文件检查与编排开销；审阅包生成耗时包含预览调用，不能重复相加。总耗时截至审阅包生成完毕，不包含最终报告序列化和落盘。Prettier 的检查与预览各有两层计时，彼此重叠，不能相加：`check` 为整个检查进程耗时，`check-api` 为其内部逐文件 API 与读文件耗时；`preview-batch` 为整个预览进程耗时，`preview` 为其内部逐文件 API 与读写耗时。报告末尾的重跑命令保留 `-Profiler`、非默认超时参数和 `-Dictionary`。
+启用 `-Profiler` 后，`diagnosis.md` 汇总各工具与内部调用的耗时，`summary.json` 和额外生成的 `profile.json` 保存汇总及逐次调用明细，包括文件、耗时、退出码、超时和异常。耗时数据按以下口径统计：
 
-Prettier 检查 API 遵循固定配置、本地插件、忽略规则及 `.editorconfig`，不写入原文。预览通过本地脚本 `Format-Previews.mjs` 在一个 Node 进程内调用已安装的 Prettier API，只写入本次报告下的预览与诊断副本；逐文件状态、错误和耗时保存在 `prettier-preview.json`。格式化失败的文件保留原始副本，并继续处理后续文件。
+- 统计使用墙钟时间。工具总耗时包含版本探测、逐文件检查与编排开销。
+- 审阅包生成耗时包含预览调用，不能与预览耗时重复相加。
+- 总耗时截至审阅包生成完毕，不包含最终报告序列化和落盘。
+- Prettier 的检查与预览各有两层计时，彼此重叠，不能相加：`check` 为整个检查进程耗时，`check-api` 为其内部逐文件 API 与读文件耗时；`preview-batch` 为整个预览进程耗时，`preview` 为其内部逐文件 API 与读写耗时。
 
 ### 预览稳定性与配置保护
+
+Prettier 检查 API 遵循固定配置、本地插件、忽略规则及 `.editorconfig`，不写入原文。预览通过本地脚本 `Format-Previews.mjs` 在一个 Node 进程内调用已安装的 Prettier API，只写入本次报告下的预览与诊断副本；逐文件状态、错误和耗时保存在 `prettier-preview.json`。格式化失败的文件保留原始副本，并继续处理后续文件。
 
 检查与预览共用 `PrettierConfiguration.mjs` 解析配置，均启用 EditorConfig。逐文件记录 Prettier 版本、有效选项及 SHA256 配置指纹；指纹包括固定配置、忽略文件、实际查找范围内的 `.editorconfig` 文件和本地插件内容，保存在检查与预览 JSON 以及 `comparison.json` 中。检查与预览指纹不一致时，标记 `CONFIGURATION_MISMATCH`，保留原文副本，不提供修复候选。
 
@@ -171,7 +202,7 @@ Prettier 检查 API 遵循固定配置、本地插件、忽略规则及 `.editor
 
 ### Beyond Compare 比对
 
-- 程序位置保存在 [beyond-compare.json](../.wenlab/beyond-compare.json)，可用启动脚本的 `-BeyondComparePath` 参数或 `BEYOND_COMPARE_EXE` 环境变量覆盖。
+- 程序位置保存在 [beyond-compare.json](../.wenlab/beyond-compare.json)，其中是仓库作者本机的 Windows 绝对路径。在其他机器上，用启动脚本的 `-BeyondComparePath` 参数或 `BEYOND_COMPARE_EXE` 环境变量指定本机的 `BCompare.exe`。
 - 启动脚本在当次报告目录生成只含专用目录会话的 `.bcpkg` 设置包，自动导入后打开 GUI，无需手工创建会话。目录范围会话包含 `*.md` 文件，使用“仅比较文件”视图隐藏不含 `*.md` 的文件夹，启用规则内容比较、关闭快速相同跳过、加载时展开全部子目录。
 - 每次运行使用独立会话，避免串用其他目录的配置；不修改全局默认规则，不输出 Beyond Compare 日志或 HTML。
 - 启动前核对源文件、预览以及已记录的配置和插件 SHA256。内容已修改时拒绝打开旧预览，需重新运行 Gate。存在被隔离的预览时，启动脚本会提示先查看报告清单。
@@ -180,9 +211,9 @@ Prettier 检查 API 遵循固定配置、本地插件、忽略规则及 `.editor
 
 ## 工具查找与配置
 
-原生工具优先从 `tools/docs-audit/bin/<工具名>.exe` 查找，然后查 PATH；npm CLI 直接调用项目 `node_modules` 中固定版本的入口。Gate 在运行每个工具前核对其版本，版本不符时返回 ERROR。
+原生工具优先从 `tools/docs-audit/bin/<工具名>` 查找，然后查 PATH；npm CLI 直接调用项目 `node_modules` 中固定版本的入口。Gate 在运行每个工具前核对其版本，版本不符时返回 ERROR。
 
-各检查工具的基础配置都放在 wenlab 仓库的 `.wenlab/` 目录：`.autocorrectrc`、`rumdl.toml`、`cspell.json`、`dictionary.txt`、`.prettierrc.json`、`.prettierignore`、`.vale.ini` 与 `styles/Wenlab/`、`lychee.toml`，以及审阅包使用的 Beyond Compare 程序位置 `beyond-compare.json`。审计脚本、Prettier 斜体插件和 npm 依赖清单不是配置，仍在 `tools/docs-audit/`。
+各检查工具的基础配置都放在 wenlab 仓库的 `.wenlab/` 目录：`.autocorrectrc`、`rumdl.toml`、`cspell.json`、`dictionary.txt`、`.prettierrc.json`、`.prettierignore`、`.vale.ini` 与 `styles/Wenlab/`、`lychee.toml`，以及审阅包使用的 Beyond Compare 程序位置 `beyond-compare.json`。审计脚本、Prettier 斜体插件和 npm 依赖清单不是配置，位于 `tools/docs-audit/`。
 
 ### AutoCorrect
 
@@ -204,7 +235,7 @@ rumdl 检查 Markdown 结构，配置为 `rumdl.toml`。
 - MD026 检查标题末尾的点号：半角的 `.,;:`，以及全角的句号、逗号、分号、冒号和顿号。问号和叹号不报告。
 - 不启用检查相对链接目标的 MD057；本地文件链接与锚点是否存在由 lychee 离线检查。
 - 不启用检查重复标题的 MD024。标题重名改由 Vale 的 `HeadingDuplicates.yml` 检查，它在 MD024 只查同级重名的基础上，还检查与直接上级同名的标题。
-- 被审计项目可用 `rumdl.disable` 额外关闭规则，见“项目级配置”。
+- 被审计项目可用 `rumdl.disable` 额外关闭规则，见[项目级配置](#项目级配置)。
 
 ### CSpell
 
@@ -212,14 +243,14 @@ CSpell 检查英文拼写，配置为 `cspell.json`。
 
 - 语言为美式与英式英语，忽略网址，不读取 `.gitignore`。
 - Gate 一次调用通过 `--file-list` 检查整份清单，从输出中提取未知词及行列。
-- 随包词典、wenlab 词典、项目词典和 `-Dictionary` 附加的词典按“项目级配置”所述叠加。用到项目词典或附加词典时，Gate 在报告目录生成导入基础配置的 `cspell-config.json`。
-- wenlab 词典只收录审计工具相关的专有名词；某个项目特有的专业词应写进该项目的 `.wenlab/dictionary.txt`。两类词典都只逐项收录经判断的专有名词，不批量接受未知词。
+- 随包词典、wenlab 词典、项目词典和 `-Dictionary` 附加的词典按[项目级配置](#项目级配置)所述叠加。用到项目词典或附加词典时，Gate 在报告目录生成导入基础配置的 `cspell-config.json`。
+- wenlab 词典主要收录审计工具和 wenlab 自身文档用到的专有名词，不保证每个词条都出现在当前文档中。它对所有被审计项目生效，其中的词在任何项目中都不会被报为拼写错误。某个项目特有的专业词应写进该项目的 `.wenlab/dictionary.txt`。两类词典都只逐项收录经判断的专有名词，不批量接受未知词。
 
 ### Prettier
 
 Prettier 检查 Markdown 格式，并为审阅包生成格式修复预览。配置为 `.prettierrc.json` 与 `.prettierignore`。
 
-- 检查和预览都不经过 Prettier CLI：检查由 `Check-Markdown.mjs`、预览由 `Format-Previews.mjs` 各自在一个 Node 进程内调用已安装的 Prettier API。两者通过 `PrettierConfiguration.mjs` 共用配置并启用 EditorConfig，详见“报告与审阅包”。
+- 检查和预览都不经过 Prettier CLI：检查由 `Check-Markdown.mjs`、预览由 `Format-Previews.mjs` 各自在一个 Node 进程内调用已安装的 Prettier API。两者通过 `PrettierConfiguration.mjs` 共用配置并启用 EditorConfig，详见[预览稳定性与配置保护](#预览稳定性与配置保护)。
 - 保留段落软换行；不格式化代码块内容，与 AutoCorrect、rumdl 跳过代码块的做法一致，文档中故意写的反例不会被改写。
 - 保留文件原有的 CRLF 或 LF 换行符（`endOfLine` 为 `auto`）。同一文件混用两种换行符时，Prettier 会按第一行统一并判为格式问题，这一行为无法通过配置关闭。
 - Prettier 本身固定用 `_` 输出斜体，没有对应配置项；项目通过本地插件 [prettier-plugin-asterisk-emphasis.mjs](../tools/docs-audit/prettier-plugin-asterisk-emphasis.mjs) 改为输出 `*`，与 rumdl MD049 的要求一致。斜体的首尾紧挨着另一个斜体或粗体时，插件保留 `_`，以免标记合并成 `**` 而改变含义；这种嵌套写法会被 rumdl 报出，应改写为不嵌套的形式。
@@ -230,8 +261,8 @@ Prettier 检查 Markdown 格式，并为审阅包生成格式修复预览。配�
 Vale 检查中文标点与数值写法、句子长度与段末标点、标题结构、术语。规则全部位于 `.wenlab/styles/Wenlab/`，不依赖在线规则包，只报告问题，不改写原文。
 
 - `.vale.ini` 对 `.md` 和 `.markdown` 文件启用全部 Wenlab 规则。所有规则都是 error 级别，命中即判为 FAIL。
-- Gate 逐篇调用，单篇文档的执行故障不中断其余文档的检查，见“结果判定”。
-- 被审计项目可用 `vale.disable` 关闭个别规则，见“项目级配置”。
+- Gate 逐篇调用，单篇文档的执行故障不中断其余文档的检查，见[结果判定](#结果判定)。
+- 被审计项目可用 `vale.disable` 关闭个别规则，见[项目级配置](#项目级配置)。
 
 中文标点与数值规则只检查正文和 frontmatter 中的值，不检查行内代码、代码块、链接地址和 YAML 语法本身。标识符、命令和示例反例应写成行内代码或代码块。
 
@@ -274,12 +305,12 @@ lychee 检查链接，配置为 `lychee.toml`。
 - 两个 Gate 都运行离线检查 `lychee-local`，加 `--offline`，只检查本地文件与锚点；RemoteGate 另外运行在线检查 `lychee-online`，访问 HTTP 和 HTTPS 网址。
 - Gate 每种检查一次调用，通过 `--files-from` 检查整份清单，启用锚点检查，以项目根目录解析以 `/` 开头的链接，以 JSON 输出结果。
 - 不检查代码块和行内代码中的链接。在线检查时，每个请求超时 20 秒，失败后重试 1 次，最多 4 个并发请求，不使用缓存。
-- 被审计项目可用 `lychee.exclude` 排除链接，见“项目级配置”；FAIL 与 REVIEW 的归类见“结果判定”。
+- 被审计项目可用 `lychee.exclude` 排除链接，见[项目级配置](#项目级配置)；FAIL 与 REVIEW 的归类见[结果判定](#结果判定)。
 
 ## 测试
 
 ```text
-# 模拟 CLI 响应，覆盖编排与故障聚合。
+# 模拟 CLI 响应，覆盖编排与故障分支。
 node ./tools/docs-audit/tests/Test-DocsAudit.mjs
 # 使用已安装的六个真实工具与本机回环 HTTP 服务，不安装任何依赖。
 node ./tools/docs-audit/tests/Test-RealTools.mjs
@@ -287,6 +318,6 @@ node ./tools/docs-audit/tests/Test-RealTools.mjs
 node ./tools/docs-audit/tests/Test-ReviewArtifacts.mjs
 # 验证 wenlab 兜底词典、项目词典缺失时的警告、-Dictionary 附加及缺失时报错。
 node ./tools/docs-audit/tests/Test-ProjectDictionary.mjs
-# 验证项目级 .wenlab/docs-audit.json 的规则覆盖、目录和文件排除、文件名检查及无效配置报错。
+# 验证项目级 .wenlab/docs-audit.json 的规则覆盖、目录和文件排除、链接排除、文件名检查、归档链接检查及无效配置报错。
 node ./tools/docs-audit/tests/Test-ProjectConfig.mjs
 ```

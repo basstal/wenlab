@@ -96,6 +96,7 @@ export async function readProjectAuditConfig(configPath, runtimeConfigRoot) {
     LycheeExclude: [],
     ValeDisable: [],
     FileNames: true,
+    ArchiveLinks: { Enabled: true, DirectoryNames: [] },
   };
   if (!(await pathExists(configPath, "file"))) return config;
   config.Found = true;
@@ -110,7 +111,7 @@ export async function readProjectAuditConfig(configPath, runtimeConfigRoot) {
     throw new Error(`Invalid project audit config ${configPath}: the top level must be an object.`);
   }
   for (const key of Object.keys(data)) {
-    if (!["exclude", "rumdl", "lychee", "vale", "fileNames"].includes(key)) {
+    if (!["exclude", "rumdl", "lychee", "vale", "fileNames", "archiveLinks"].includes(key)) {
       throw new Error(`Invalid project audit config ${configPath}: unsupported key '${key}'.`);
     }
     if (key !== "exclude" && (!data[key] || typeof data[key] !== "object" || Array.isArray(data[key]))) {
@@ -235,6 +236,38 @@ export async function readProjectAuditConfig(configPath, runtimeConfigRoot) {
         );
       }
       config.FileNames = data.fileNames.enabled;
+    }
+  }
+
+  if (Object.hasOwn(data, "archiveLinks")) {
+    for (const key of Object.keys(data.archiveLinks)) {
+      if (!["enabled", "directoryNames"].includes(key)) {
+        throw new Error(`Invalid project audit config ${configPath}: unsupported key 'archiveLinks.${key}'.`);
+      }
+    }
+    if (Object.hasOwn(data.archiveLinks, "enabled")) {
+      if (typeof data.archiveLinks.enabled !== "boolean") {
+        throw new Error(
+          `Invalid project audit config ${configPath}: archiveLinks.enabled must be true or false.`,
+        );
+      }
+      config.ArchiveLinks.Enabled = data.archiveLinks.enabled;
+    }
+    if (Object.hasOwn(data.archiveLinks, "directoryNames")) {
+      const names = data.archiveLinks.directoryNames;
+      if (!Array.isArray(names) || !names.length) {
+        throw new Error(
+          `Invalid project audit config ${configPath}: 'archiveLinks.directoryNames' must be a non-empty array.`,
+        );
+      }
+      for (const name of names) {
+        if (typeof name !== "string" || !name.trim() || /[\\/]/.test(name) || [".", ".."].includes(name.trim())) {
+          throw new Error(
+            `Invalid project audit config ${configPath}: archiveLinks.directoryNames entry '${name}' must be a single directory name.`,
+          );
+        }
+      }
+      config.ArchiveLinks.DirectoryNames = [...new Set(names.map((name) => name.trim()))];
     }
   }
   return config;
@@ -533,13 +566,15 @@ export async function discoverAuditScope({
   };
 }
 
-export async function getAuditArchiveLinks(files, docRoot) {
+export async function getAuditArchiveLinks(files, docRoot, directoryNames) {
   const pattern = /(?:!?\[[^\]]*\]\(\s*|^\s{0,3}\[[^\]]+\]:\s*)(?<target><[^>]*>|[^\s)]+)/g;
+  const archiveNames = new Set(directoryNames.map((name) => name.toLowerCase()));
+  const isArchive = (segment) => archiveNames.has(segment.toLowerCase());
   const found = [];
   for (const file of files) {
     const sourceParts = file.split("/");
     sourceParts.pop();
-    if (sourceParts.some((part) => part.toLowerCase() === "archive")) continue;
+    if (sourceParts.some(isArchive)) continue;
     const full = path.join(docRoot, file);
     const lines = (await fs.readFile(full, "utf8")).split(/\r?\n/);
     let fence = null;
@@ -576,7 +611,7 @@ export async function getAuditArchiveLinks(files, docRoot) {
           continue;
         }
         const segments = path.relative(docRoot, resolved).split(/[\\/]/);
-        if (segments.some((segment) => segment.toLowerCase() === "archive")) {
+        if (segments.some(isArchive)) {
           found.push({
             File: file,
             Line: index + 1,
@@ -700,8 +735,10 @@ export async function invokeDocsAudit(options = {}, overrides = {}) {
     }
     const before = new Map();
     for (const file of files) before.set(file, await sha256File(path.join(docRoot, file)));
-    archiveLinks = await getAuditArchiveLinks(files, docRoot);
-    archiveLinksScanned = true;
+    if (projectConfig.ArchiveLinks.Enabled && projectConfig.ArchiveLinks.DirectoryNames.length) {
+      archiveLinks = await getAuditArchiveLinks(files, docRoot, projectConfig.ArchiveLinks.DirectoryNames);
+      archiveLinksScanned = true;
+    }
     const inputList = path.join(run, "input-files.txt");
     await fs.writeFile(
       inputList,
@@ -1153,7 +1190,7 @@ export async function invokeDocsAudit(options = {}, overrides = {}) {
     for (const warning of summary.Warnings) console.log(`[WARN] ${warning}`);
     if (archiveLinks.length) {
       console.log(
-        `[INFO] ${archiveLinks.length} 处链接指向 archive 目录下的归档文档（不影响结果），清单见 diagnosis.md 的「对归档文档的链接引用」一节。`,
+        `[INFO] ${archiveLinks.length} 处链接指向归档目录（${projectConfig.ArchiveLinks.DirectoryNames.join("、")}）下的归档文档（不影响结果），清单见 diagnosis.md 的「对归档文档的链接引用」一节。`,
       );
       if (exitCode === 0) console.log(path.join(run, "diagnosis.md"));
     }

@@ -77,7 +77,7 @@ async function checkNpmTool(name, packageName, expectedVersion) {
       name,
       false,
       failure instanceof Error ? failure.message : String(failure),
-      "按 docs/依赖安装说明.md 中的 npm ci 命令安装",
+      "安装 tools/docs-audit/package.json 中声明的 npm 依赖",
     );
   }
 }
