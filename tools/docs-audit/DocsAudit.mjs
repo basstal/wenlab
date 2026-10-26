@@ -1088,7 +1088,13 @@ export async function invokeDocsAudit(options = {}, overrides = {}) {
   }
 
   const statuses = results.map((result) => result.Status);
-  exitCode = statuses.includes("ERROR") ? 2 : statuses.includes("FAIL") || statuses.includes("REVIEW") ? 1 : 0;
+  exitCode = statuses.includes("ERROR")
+    ? 2
+    : statuses.includes("FAIL")
+      ? 1
+      : statuses.includes("REVIEW")
+        ? 3
+        : 0;
   const summaryStatus = statuses.includes("ERROR")
     ? "ERROR"
     : statuses.includes("FAIL")

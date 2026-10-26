@@ -28,7 +28,7 @@ Gate 通过不代表中文语病、跨文档语义冲突与内容重复已经审
 | LocalGate（本地格式质量阀门）  | 文档修改后，提交、合并前 | 文件名检查、AutoCorrect 2.16.3、rumdl 0.3.0、CSpell 10.3.6、Prettier 3.9.9、Vale 3.24.0，以及 lychee 0.24.2 离线文件与锚点检查 |
 | RemoteGate（远程格式质量阀门） | 发布前、定期 CI          | LocalGate 的全部检查 + lychee 在线 HTTP/HTTPS 与锚点检查                                                                       |
 
-- 所有入口只读，不执行安装、自动修复、npx、Vale 包同步或外部规则下载。检查前后比较源文件 SHA256，出现变化时报告 ERROR。
+- 所有入口都不改写源文档，也不执行安装、自动修复、npx、Vale 包同步或外部规则下载。检查前后比较源文件 SHA256，出现变化时报告 ERROR。
 - LocalGate 不访问外部网址。RemoteGate 会访问文档引用的网址，相同 URL 在不同文件中可能重复请求。
 
 ## 运行
@@ -44,7 +44,7 @@ node <wenlab>/tools/docs-audit/LocalGate.mjs -Path .
 node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
 ```
 
-可从任意工作目录调用脚本的绝对路径。文件名通过参数数组传递，支持中文和空格。
+可以在任意工作目录下通过绝对路径调用脚本。文件名通过参数数组传递，支持中文和空格。
 
 ### 检查范围与项目根目录
 
@@ -52,7 +52,7 @@ node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
 - `-Path` 可以是任意目录、子目录或单个 Markdown 文件，不要求位于 Git 工作区中。相对路径按调用时的当前工作目录解析，如在项目目录中执行时用 `-Path .`；也可以给出绝对路径。不指定 `-Path` 时，无论从哪个目录调用，都检查本仓库的 `docs`。
 - 文件清单按 `-Path` 选择规则，`diagnosis.md` 的“配置与警告”一节写明本次使用的规则：
   - `-Path` 正好是 Git 仓库根目录时，按 Git 规则收集已跟踪及未被 `.gitignore` 忽略的 Markdown，再应用项目排除规则。已删除但仍在 Git 索引中的文档返回 ERROR。
-  - 其他目录（如 Git 仓库下的 `docs`，或不在 Git 中的目录）递归收集其中所有 Markdown，包括被 `.gitignore` 忽略的文件；跳过名为 `.git` 和 `node_modules` 的目录、项目排除规则匹配项、当次报告输出目录，以及符号链接或目录联接指向的目录。
+  - 其他目录（如 Git 仓库下的 `docs`，或不在 Git 中的目录）递归收集其中所有 Markdown，包括被 `.gitignore` 忽略的文件；跳过名为 `.git` 和 `node_modules` 的目录、项目排除规则匹配项、报告根目录（默认为 wenlab 仓库的 `.tmp/docs-audit`，含历次运行的报告），以及符号链接或目录联接指向的目录。
   - `-Path` 是单个文件时只检查该文件。
   - 两种目录规则都应用 `.wenlab/docs-audit.json` 的 `exclude` 列表；没有配置排除项时，不额外跳过任何项目路径。`-Path` 直接指向被排除的目录或其中的文件时，该显式范围不被同一条规则拦截；其下其他排除规则仍生效。
 - 项目根目录：`-Path` 位于 Git 工作区中时取该工作区根目录；不在 Git 工作区中时，`-Path` 是目录则取该目录，是文件则取文件所在的目录。检查工具以项目根目录为工作目录运行，lychee 也以它为根目录解析以 `/` 开头的链接。
@@ -113,18 +113,19 @@ node ./tools/docs-audit/LocalGate.mjs -Path docs -Profiler
 
 ### 运行参数
 
-- `-ReportDirectory` 指定报告输出目录，相对路径按 wenlab 仓库根目录解析，也支持绝对路径；不指定时写入 wenlab 仓库的 `.tmp/docs-audit/`。报告目录会从源文档扫描中排除；若显式指向被检查仓库内部，报告仍会写在该位置，但不会作为输入文档。
-- `-TimeoutSeconds` 取 1～3600 的整数，默认 180 秒。逐文件调用使用此超时；清单检查及预览进程的超时为此值乘以该批文件数，上限为 460,800 秒（128 小时）。批处理不能单独中断某个文件，超时会将整批判为执行故障。
+- `-ReportDirectory` 指定报告根目录，相对路径按 wenlab 仓库根目录解析，也支持绝对路径；不指定时为 wenlab 仓库的 `.tmp/docs-audit/`。每次运行在报告根目录下新建 `<Gate>/<UTC时间>-<运行ID>/` 子目录，报告写在该子目录中，见[报告与审阅包](#报告与审阅包)。报告根目录会从源文档扫描中排除；若显式指向被检查仓库内部，报告仍会写在该位置，但不会作为输入文档。
+- `-TimeoutSeconds` 取 1～3600 的整数，默认 180 秒。逐文件调用使用此超时；清单检查及预览进程的超时为此值乘以清单中的文件数，上限为 460,800 秒（128 小时）。这类进程不能单独中断某个文件，超时会将整份清单判为执行故障。
 - `-Profiler` 启用可选的耗时统计，默认关闭。终端显示各工具总耗时，以及项目根目录定位与文件扫描、版本探测、逐文件或批量检测与预览调用的次数、合计、平均和最大耗时。失败、超时及启动异常也计时，不改变 Gate 的判定规则。报告中的耗时数据见[报告与审阅包](#报告与审阅包)。
 - `-Dictionary` 附加一个项目词典，见[项目级配置](#项目级配置)。
 
 ## 结果判定
 
-| 退出码 | 含义                                                 |
-| ------ | ---------------------------------------------------- |
-| 0      | 所有必需检查通过                                     |
-| 1      | 至少一个 FAIL 或 REVIEW，均阻断 Gate                 |
-| 2      | 缺工具、版本不符、配置/执行/报告故障，优先于退出码 1 |
+| 退出码 | 含义                                                                                  |
+| ------ | ------------------------------------------------------------------------------------- |
+| 0      | 所有必需检查通过                                                                      |
+| 1      | 至少一个 FAIL，阻断 Gate；同时存在 REVIEW 时仍返回 1                                  |
+| 2      | 缺工具、版本不符、配置/执行/报告故障，优先于退出码 1 和 3                             |
+| 3      | 没有 FAIL 和 ERROR，但至少一个 REVIEW 需要人工复核，阻断 Gate；只有 RemoteGate 会返回 |
 
 lychee 的结果按以下规则归类，解析同时覆盖其输出中的 `error_map` 与 `timeout_map`：
 
@@ -138,7 +139,7 @@ Vale 逐篇检查，单篇文档出现执行故障（如 frontmatter 的 YAML �
 
 ## 报告与审阅包
 
-每次运行生成独立的报告目录 `.tmp/docs-audit/<Gate>/<UTC时间>-<运行ID>/`，不同运行互不覆盖，无论是否通过都会保存。目录中包含 `summary.json`、逐工具日志、lychee 原始 JSON，以及为当次范围生成的审阅包：
+每次运行生成独立的报告目录 `<报告根目录>/<Gate>/<UTC时间>-<运行ID>/`，报告根目录默认为 `.tmp/docs-audit`，可用 `-ReportDirectory` 指定。不同运行互不覆盖，无论是否通过都会保存。目录中包含 `summary.json`、逐工具日志、lychee 原始 JSON，以及诊断报告 `diagnosis.md` 和为当次范围生成的审阅包：
 
 | 文件/目录             | 用途                                                         |
 | --------------------- | ------------------------------------------------------------ |
@@ -164,7 +165,7 @@ Vale 逐篇检查，单篇文档出现执行故障（如 frontmatter 的 YAML �
 
 `summary.json` 中的 `ExitCodes` 按调用记录，`Batches` 保存各次调用对应的文件、退出码及超时信息；批次退出码不能当作每个文件的结果。Prettier 的逐文件 PASS、FAIL、ERROR 及耗时见 `prettier-check.json`，错误文件不会阻断同次进程中其他文件的检查。具体问题文件也保留在工具日志和诊断报告中。
 
-全部 PASS 且未启用 `-Profiler`、没有警告时，终端只显示各项检查结果和汇总；如有指向归档文档的链接，另外打印其数量及 `diagnosis.md` 的完整路径。存在警告时打印警告。存在 FAIL、REVIEW 或 ERROR 时，汇总后打印“诊断与修复建议”及 `diagnosis.md` 的完整路径；审阅包可用时，再打印“打开 GUI 全量规则比对”及完整的启动命令。终端不打印报告目录，也不会自动打开 GUI。
+全部 PASS 且未启用 `-Profiler`、没有警告时，终端只显示各项检查结果和汇总；如有指向归档文档的链接，另外打印其数量及 `diagnosis.md` 的完整路径。存在警告时打印警告。存在 FAIL、REVIEW 或 ERROR 时，汇总后打印“诊断与修复建议”及 `diagnosis.md` 的完整路径；审阅包可用时，再打印“打开 GUI 全量规则比对”及完整的启动命令。
 
 启用 `-Profiler` 后，`diagnosis.md` 汇总各工具与内部调用的耗时，`summary.json` 和额外生成的 `profile.json` 保存汇总及逐次调用明细，包括文件、耗时、退出码、超时和异常。耗时数据按以下口径统计：
 
@@ -186,15 +187,7 @@ Prettier 检查 API 遵循固定配置、本地插件、忽略规则及 `.editor
 ### 审阅格式修复
 
 1. 运行 Gate。存在问题时，终端会打印 `diagnosis.md` 路径和 GUI 启动命令。
-2. 打开 Beyond Compare，比对原文与 `repair-preview/`：
-
-   ```text
-   # 进入终端显示的当次报告目录后执行：
-   node ./Open-Comparison.mjs
-   # 也可从仓库根目录显式指定某次报告：
-   node ./tools/docs-audit/Open-Comparison.mjs -RunDirectory .tmp/docs-audit/RemoteGate/<运行目录>
-   ```
-
+2. 打开 Beyond Compare，比对原文与 `repair-preview/`。
 3. 审阅差异，把确认的修改应用到原文。
 4. 重新运行同一个 Gate，以全部检查 PASS、退出码 0 为准。
 
@@ -318,6 +311,7 @@ node ./tools/docs-audit/tests/Test-RealTools.mjs
 node ./tools/docs-audit/tests/Test-ReviewArtifacts.mjs
 # 验证 wenlab 兜底词典、项目词典缺失时的警告、-Dictionary 附加及缺失时报错。
 node ./tools/docs-audit/tests/Test-ProjectDictionary.mjs
-# 验证项目级 .wenlab/docs-audit.json 的规则覆盖、目录和文件排除、链接排除、文件名检查、归档链接检查及无效配置报错。
+# 验证项目级 .wenlab/docs-audit.json 的规则覆盖、目录和文件排除、链接排除、文件名检查、归档链接检查及无效配置报错，
+# 以及 wenlab-docs-audit Skill 的 Get-AuditContext.mjs 按排除规则输出文档清单。
 node ./tools/docs-audit/tests/Test-ProjectConfig.mjs
 ```

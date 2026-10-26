@@ -82,7 +82,9 @@ function createHarness(scenario) {
           response.stdout = JSON.stringify({ [args.at(-1)]: [valeAlert] });
         }
       }
-      if (scenario === "quality" && tool === "cspell") response.exitCode = 1;
+      if ((scenario === "quality" || scenario === "reviewAndQuality") && tool === "cspell") {
+        response.exitCode = 1;
+      }
       if (scenario === "runtime" && tool === "prettier") response.exitCode = 2;
       if (scenario === "timeout" && tool === "cspell") response.timedOut = true;
       if (scenario === "launchError" && tool === "cspell") {
@@ -111,11 +113,13 @@ function createHarness(scenario) {
         const report = { error_map: {} };
         const online = !args.includes("--offline");
         if (
-          ["review403", "review429", "reviewTimeout", "broken404", "localBroken"].includes(scenario) &&
+          ["review403", "review429", "reviewTimeout", "reviewAndQuality", "broken404", "localBroken"].includes(
+            scenario,
+          ) &&
           (online || scenario === "localBroken")
         ) {
           const code =
-            scenario === "review403"
+            scenario === "review403" || scenario === "reviewAndQuality"
               ? 403
               : scenario === "review429"
                 ? 429
@@ -167,9 +171,10 @@ const cases = [
   { Mode: "timeout", Gate: "LocalGate", Code: 2, Status: "ERROR", Count: 7 },
   { Mode: "precedence", Gate: "LocalGate", Code: 2, Status: "ERROR", Count: 7 },
   { Mode: "missing", Gate: "LocalGate", Code: 2, Status: "ERROR", Count: 7 },
-  { Mode: "review403", Gate: "RemoteGate", Code: 1, Status: "REVIEW", Count: 8 },
-  { Mode: "review429", Gate: "RemoteGate", Code: 1, Status: "REVIEW", Count: 8 },
-  { Mode: "reviewTimeout", Gate: "RemoteGate", Code: 1, Status: "REVIEW", Count: 8 },
+  { Mode: "review403", Gate: "RemoteGate", Code: 3, Status: "REVIEW", Count: 8 },
+  { Mode: "review429", Gate: "RemoteGate", Code: 3, Status: "REVIEW", Count: 8 },
+  { Mode: "reviewTimeout", Gate: "RemoteGate", Code: 3, Status: "REVIEW", Count: 8 },
+  { Mode: "reviewAndQuality", Gate: "RemoteGate", Code: 1, Status: "FAIL", Count: 8 },
   { Mode: "broken404", Gate: "RemoteGate", Code: 1, Status: "FAIL", Count: 8 },
   { Mode: "localBroken", Gate: "LocalGate", Code: 1, Status: "FAIL", Count: 7 },
   { Mode: "badJson", Gate: "LocalGate", Code: 2, Status: "ERROR", Count: 7 },

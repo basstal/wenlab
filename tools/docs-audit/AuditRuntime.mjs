@@ -100,7 +100,7 @@ export async function defaultResolveExecutable(name) {
   }
   const resolved = await resolvePathExecutable(name);
   if (!resolved) {
-    throw new Error(`Missing executable: ${name}. See README.md; automatic installation is disabled.`);
+    throw new Error(`Missing executable: ${name}. See docs/依赖安装说明.md; automatic installation is disabled.`);
   }
   return resolved;
 }
@@ -185,7 +185,7 @@ async function readNpmBin(packageName, version, root = packageRoot) {
   const folder = path.join(root, "node_modules", packageName);
   const metadataPath = path.join(folder, "package.json");
   if (!(await pathExists(metadataPath, "file"))) {
-    throw new Error(`Missing ${packageName}@${version}. See README.md; automatic installation is disabled.`);
+    throw new Error(`Missing ${packageName}@${version}. See docs/依赖安装说明.md; automatic installation is disabled.`);
   }
   const metadata = await readJson(metadataPath);
   if (metadata.version !== version) {
