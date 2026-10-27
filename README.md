@@ -7,6 +7,9 @@ Gate 入口、编排、审阅包和测试均由 Node.js `.mjs` 脚本实现。
 
 ## Agent 入口
 
+本 Skill 需要完整的 wenlab 仓库及相应运行环境。仅通过 Skill 目录或安装器获取 `.agents/skills/wenlab-docs-audit/`，不能获得完整审计能力；写作规范、项目配置和 Gate 脚本位于仓库其他目录中。
+使用前请准备完整仓库或 [GitHub Releases](https://github.com/basstal/wenlab/releases) 中的项目源码，并按 [依赖安装说明](docs/依赖安装说明.md) 核对运行环境。只审阅内容质量或编辑质量时不运行 Gate，但仍需完整仓库、Node.js 和上下文脚本。
+
 需要审阅 Markdown 文档质量时，可使用本仓库的 [wenlab-docs-audit Skill](.agents/skills/wenlab-docs-audit/SKILL.md)。Skill 说明包含适用场景、上下文获取、格式质量检查，以及按文章类型选择规范的内容质量与编辑质量审校流程。使用时需指定待审阅的文件、目录或项目，加载方式由 Agent 宿主配置。
 
 - 写作依据：先按 [Agent 写作备忘](docs/agent写作备忘.md) 的分类表为每篇文档确定文章类型，再采用表中对应的规范和审阅重点。编程、计算机和游戏技术类选用 [当前状态文档写作规范](docs/当前状态文档写作规范.md) 和 [中文技术写作语义审校清单](docs/中文技术写作语义审校清单.md)，并按当前状态文档规范的要求一并阅读 [通用写作规范](docs/通用写作规范.md)；表中标为“暂定”或未列出的类型使用通用写作规范。

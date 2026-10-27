@@ -8,6 +8,10 @@ description: >-
 
 # wenlab 文档审计
 
+本 Skill 需要完整的 wenlab 仓库及相应运行环境。仅安装本 Skill 目录不能获得完整审计能力：写作规范、基础配置和 Gate 脚本位于仓库其他目录中。
+准备步骤见 [GitHub README](https://github.com/basstal/wenlab#agent-入口) 和 [依赖安装说明](https://github.com/basstal/wenlab/blob/main/docs/依赖安装说明.md)。只审阅内容质量或编辑质量时不运行 Gate，但仍需完整仓库、Node.js 和上下文脚本。
+执行前确认完整仓库的位置；通过安装器复制到其他位置的 Skill，使用完整仓库中的 `.agents/skills/wenlab-docs-audit/` 及其脚本。缺少仓库或运行环境时，报告缺失项和准备入口，不将缺失检查视为通过。
+
 对目录、单个 Markdown 文件或 Git 项目做文档质量审阅，分为三层：
 
 | 层次     | 解决的问题                                                      | 手段                                  |
